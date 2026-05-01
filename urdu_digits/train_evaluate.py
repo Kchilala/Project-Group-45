@@ -90,3 +90,25 @@ def evaluate(model, dataloader, criterion, device):
     avg_loss = running_loss / total
     accuracy = correct / total
     return avg_loss, accuracy
+
+
+def predict(model, dataloader, device):
+    model.eval()
+
+    ids = []
+    categories = []
+
+    with torch.no_grad():
+        for images, image_ids in dataloader:
+            images = images.to(device)
+
+            outputs = model(images)
+            predictions = outputs.argmax(dim=1).cpu().tolist()
+
+            if hasattr(image_ids, "tolist"):
+                image_ids = image_ids.tolist()
+
+            ids.extend(int(image_id) for image_id in image_ids)
+            categories.extend(int(prediction) for prediction in predictions)
+
+    return ids, categories

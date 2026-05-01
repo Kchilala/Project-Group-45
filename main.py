@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 import sys
 from pathlib import Path
+import pandas as pd
 from urdu_digits.model import ResNet18
 from torchvision import transforms
 from urdu_digits.dataloader import get_dataloaders
-from urdu_digits.train_evaluate import evaluate, train_one_epoch
+from urdu_digits.train_evaluate import evaluate, predict, train_one_epoch
 
 def main():
     print(f"Python executable: {sys.executable}")
@@ -42,11 +43,12 @@ def main():
     model = ResNet18(num_classes=10, pretrained=True).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    num_epochs = 5
+    num_epochs = 15
     best_val_loss = float("inf")
     models_dir = Path("models")
     models_dir.mkdir(exist_ok=True)
     best_model_path = models_dir / "best_resnet18.pth"
+    submission_path = Path("submission.csv")
 
     print(f"Train batches: {len(train_loader)}")
     print(f"Val batches:   {len(val_loader)}")
@@ -76,6 +78,24 @@ def main():
             best_val_loss = val_loss
             torch.save(model.state_dict(), best_model_path)
             print(f"Saved best model to {best_model_path} with val loss {best_val_loss:.4f}")
+
+    print(f"\nLoading best model from {best_model_path} for test predictions...")
+    model.load_state_dict(torch.load(best_model_path, map_location=device))
+
+    test_ids, test_categories = predict(
+        model=model,
+        dataloader=test_loader,
+        device=device,
+    )
+
+    sample_submission = pd.read_csv("data/sample_submission.csv")
+    submission = pd.DataFrame({
+        "Id": test_ids,
+        "Category": test_categories,
+    })
+    submission = submission[sample_submission.columns]
+    submission.to_csv(submission_path, index=False)
+    print(f"Saved Kaggle submission file to {submission_path}")
 
 if __name__ == "__main__":
     main()
