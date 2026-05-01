@@ -42,7 +42,7 @@ def main():
 
     model = ResNet18(num_classes=10, pretrained=True).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
     num_epochs = 15
     best_val_loss = float("inf")
     models_dir = Path("models")
